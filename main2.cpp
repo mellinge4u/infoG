@@ -1,4 +1,4 @@
-#include "tgaimage.h"
+/*#include "tgaimage.h"
 #include <fstream>
 #include <string>
 #include <fstream>
@@ -9,13 +9,17 @@
 #include <vector>
 #include <sstream>
 #include <limits>
-#include <string.h>
 
 using namespace std;
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor blue = TGAColor(0, 0, 255, 255);
+
+float eye[3] = { 1, 1, 3 };;
+float center[3] = { 0, 0, 0 };;
+
+
 const int HEIGHT = 800;
 const int WIDTH = 800;
 
@@ -227,15 +231,15 @@ void triangle_filled_bary2(vector<float> v1, vector<float> v2, vector<float> v3,
 
 	float tx0 = text_v1[0];
 	float ty0 = text_v1[1];
-	float tz0 = text_v1[2];
+	//float tz0 = text_v1[2];
 
 	float tx1 = text_v2[0];
 	float ty1 = text_v2[1];
-	float tz1 = text_v2[2];
+	//float tz1 = text_v2[2];
 
 	float tx2 = text_v3[0];
 	float ty2 = text_v3[1];
-	float tz2 = text_v3[2];
+	//float tz2 = text_v3[2];
 
 	float xmin, xmax, ymin, ymax;
 	xmin = min(min(x0, x1), x2);
@@ -266,12 +270,12 @@ void triangle_filled_bary2(vector<float> v1, vector<float> v2, vector<float> v3,
 	vPv.at(2) /= normalisation;
 
 	//produit scalaire
-    float lum = abs(vPv.at(0) * 255 + vPv.at(1) * 0 + vPv.at(2) * 1);
-    float lum2 = abs(vpv.at(0)*0 + vPv.at(1)*0 +vPv.at(2)*255);
+	float lum = abs(vPv.at(0) * 0 + vPv.at(1) * 0 + vPv.at(2) * 1);
+
 	//color = TGAColor(255 * lum, 255 * lum, 255 * lum, 255);
 
 	// pour dessiner les triangles
-	int xP, yP, txP = 0, tyP = 0;
+	int xP, yP;
 	for (xP = xmin; xP <= xmax; xP++) {
 		for (yP = ymin; yP <= ymax; yP++) {
 			vector<float> vx;
@@ -310,9 +314,9 @@ void triangle_filled_bary2(vector<float> v1, vector<float> v2, vector<float> v3,
 					float t_x = p_tv1x + p_tv2x + p_tv3x;
 					float t_y = p_tv1y + p_tv2y + p_tv3y;
 					TGAColor color = text.get(t_x, t_y);
-                    color.r = color.r * lum*lum2;
-                    color.g = color.g * lum*lum2;
-                    color.b = color.b * lum*lum2;
+					color.r = color.r * lum;
+					color.g = color.g * lum;
+					color.b = color.b * lum;
 					image.set(xP, yP, color);
 				}
 			}
@@ -349,23 +353,77 @@ void calculateTransformation(float* m_coord, float* m_res) {
 }
 
 void set_viewport(int x, int y, int w, int h, float* viewport) {
-	viewport[0 * 4 + 3] = w / 2.f;
-	viewport[1 * 4 + 3] = h / 2.f;
-	viewport[2 * 4 + 3] = w / 2.f;
+	viewport[0 * 4 + 3] = x+w / 2.f;
+	viewport[1 * 4 + 3] = y+h / 2.f;
+	viewport[2 * 4 + 3] = 255 / 2.f;
 	viewport[0 * 4 + 0] = w / 2.f;
 	viewport[1 * 4 + 1] = h / 2.f;
-	viewport[2 * 4 + 2] = w / 2.f;
+	viewport[2 * 4 + 2] = 255 / 2.f;
 }
 
-void applyTransformation(vector<float> &v1, vector<float> &v2,
-		vector<float> &v3) {
+void Lookat(float* eye, float* center, float* up,
+		float* transfo) {
+	vector<float> z;
+	z[0] = eye[0] - center[0];
+	z[1] = eye[1] - center[1];
+	z[2] = eye[2] - center[2];
+	float normalisation = sqrtf(
+			pow(z.at(0), 2) + pow(z.at(1), 2) + pow(z.at(2), 2));
+	z[0] /= normalisation;
+	z[1] /= normalisation;
+	z[2] /= normalisation;
+
+	vector<float> x;
+	x.push_back(up[1] * z.at(2) - up[2] * z.at(1));
+	x.push_back((up[2] * z.at(0) - up[0] * z.at(2)));
+	x.push_back(up[0] * z.at(1) - up[1] * z.at(0));
+	normalisation = sqrtf(
+			pow(x.at(0), 2) + pow(x.at(1), 2) + pow(x.at(2), 2));
+	x[0] /= normalisation;
+	x[1] /= normalisation;
+	x[2] /= normalisation;
+
+	vector<float> y;
+	y.push_back(z.at(1) * x.at(2) - z.at(2) * x.at(1));
+	y.push_back((z.at(2) * x.at(0) - z.at(0) * x.at(2)));
+	y.push_back(z.at(0) * x.at(1) - z.at(1) * x.at(0));
+	normalisation = sqrtf(
+				pow(y.at(0), 2) + pow(y.at(1), 2) + pow(y.at(2), 2));
+	y[0] /= normalisation;
+	y[1] /= normalisation;
+	y[2] /= normalisation;
+
+	for (int i = 0; i < 3; i++) {
+		transfo[0*4+i] = x[i];
+		transfo[1*4+i] = y[i];
+		transfo[2*4+i] = z[i];
+		transfo[i*4+3] = -center[i];
+	}
+
+}
+
+void appTransfo(vector<float> &v1, vector<float> &v2, vector<float> &v3) {
 	float m_v1[4] = { v1[0], v1[1], v1[2], 1.f };
 	float m_v2[4] = { v2[0], v2[1], v2[2], 1.f };
 	float m_v3[4] = { v3[0], v3[1], v3[2], 1.f };
-
 	float projection[16] = { 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f,
 			1.f, 0.f, 0.f, 0.f, 0.f, 1.f };
-	projection[3 * 4 + 2] = -1.f / 90.;
+
+	float ModelView[16] = { 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f,
+			1.f, 0.f, 0.f, 0.f, 0.f, 1.f };
+	float* up;
+	cout << " lol " << endl;
+	up[0] = 0;
+	up[1] = 1;
+	up[2] = 0;
+	Lookat(eye, center, up, ModelView);
+	vector<float> z;
+		z[0] = eye[0] - center[0];
+		z[1] = eye[1] - center[1];
+		z[2] = eye[2] - center[2];
+		float normalisation = sqrtf(
+				pow(z.at(0), 2) + pow(z.at(1), 2) + pow(z.at(2), 2));
+ 	projection[3 * 4 + 2] = -1.f / normalisation;
 
 	float viewport[16] = { 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f,
 			1.f, 0.f, 0.f, 0.f, 0.f, 1.f };
@@ -374,10 +432,10 @@ void applyTransformation(vector<float> &v1, vector<float> &v2,
 	float rotation[16] = { 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f,
 			1.f, 0.f, 0.f, 0.f, 0.f, 1.f };
 
-	float transfo[16] = { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
-			0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
+	float transfo[16] = { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
+			0.f, 0.f, 0.f, 0.f, 0.f };
 
-	set_viewport(WIDTH, HEIGHT, WIDTH, HEIGHT, viewport);
+	set_viewport(WIDTH/8, HEIGHT/8, WIDTH*3/4, HEIGHT*3/4, viewport);
 
 	mult_mat_44_44(viewport, projection, transfo);
 
@@ -406,6 +464,8 @@ void applyTransformation(vector<float> &v1, vector<float> &v2,
 	v3[2] = m_f[2];
 
 }
+
+
 
 int main(int argc, char** argv) {
 	for (size_t i = 800 * 800; i--; z_buffer[i] = -numeric_limits<float>::max())
@@ -458,9 +518,9 @@ int main(int argc, char** argv) {
 					string1 = f_points[point1 - 1];
 					string2 = f_points[point2 - 1];
 					string3 = f_points[point3 - 1];
-                    p1 = stoi(point11);
-                    p2 = stoi(point12);
-                    p3 = stoi(point13);
+					p1 = stoi(point11);
+					p2 = stoi(point12);
+					p3 = stoi(point13);
 					string4 = f_points2[p1 - 1];
 					string5 = f_points2[p2 - 1];
 					string6 = f_points2[p3 - 1];
@@ -505,13 +565,9 @@ int main(int argc, char** argv) {
 					v6.push_back(ty3 * h);
 					//v6.push_back(tz3 * 512 + 512);
 					//triangle_filled_bary(v1, v2, v3, image, white);
-					cout << " v1 x 1 " << v1[0] << endl;
-					cout << " v2 x 1 " << v1[1] << endl;
-					cout << " v2 x 1 " << v1[2] << endl;
-					applyTransformation(v1, v2, v3);
-					cout << " v1 x 2 " << v1[0] << endl;
-					cout << " v2 x 2 " << v1[1] << endl;
-					cout << " v2 x 2 " << v1[2] << endl;
+					appTransfo(v1, v2, v3);
+					cout << " lol " << endl;
+
 					triangle_filled_bary2(v1, v2, v3, v4, v5, v6, image, text);
 				}
 				i++;
@@ -524,3 +580,4 @@ int main(int argc, char** argv) {
 	}
 	return 0;
 }
+*/
