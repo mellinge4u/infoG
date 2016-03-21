@@ -9,6 +9,7 @@
 #include <vector>
 #include <sstream>
 #include <limits>
+#include <string.h>
 
 using namespace std;
 
@@ -265,8 +266,8 @@ void triangle_filled_bary2(vector<float> v1, vector<float> v2, vector<float> v3,
 	vPv.at(2) /= normalisation;
 
 	//produit scalaire
-	float lum = abs(vPv.at(0) * 0 + vPv.at(1) * 0 + vPv.at(2) * 1);
-
+    float lum = abs(vPv.at(0) * 255 + vPv.at(1) * 0 + vPv.at(2) * 1);
+    float lum2 = abs(vpv.at(0)*0 + vPv.at(1)*0 +vPv.at(2)*255);
 	//color = TGAColor(255 * lum, 255 * lum, 255 * lum, 255);
 
 	// pour dessiner les triangles
@@ -309,9 +310,9 @@ void triangle_filled_bary2(vector<float> v1, vector<float> v2, vector<float> v3,
 					float t_x = p_tv1x + p_tv2x + p_tv3x;
 					float t_y = p_tv1y + p_tv2y + p_tv3y;
 					TGAColor color = text.get(t_x, t_y);
-					color.r = color.r * lum;
-					color.g = color.g * lum;
-					color.b = color.b * lum;
+                    color.r = color.r * lum*lum2;
+                    color.g = color.g * lum*lum2;
+                    color.b = color.b * lum*lum2;
 					image.set(xP, yP, color);
 				}
 			}
@@ -457,9 +458,9 @@ int main(int argc, char** argv) {
 					string1 = f_points[point1 - 1];
 					string2 = f_points[point2 - 1];
 					string3 = f_points[point3 - 1];
-					p1 = stoi(point11);
-					p2 = stoi(point12);
-					p3 = stoi(point13);
+                    p1 = stoi(point11);
+                    p2 = stoi(point12);
+                    p3 = stoi(point13);
 					string4 = f_points2[p1 - 1];
 					string5 = f_points2[p2 - 1];
 					string6 = f_points2[p3 - 1];
